@@ -17,6 +17,7 @@ type QueueManager struct {
 	mu            sync.Mutex
 }
 
+// NewQueueManager cria uma fila com canal e buffer interno.
 func NewQueueManager(key string, bufferSize int) *QueueManager {
 	return &QueueManager{
 		Key:           key,
@@ -30,6 +31,7 @@ func NewQueueManager(key string, bufferSize int) *QueueManager {
 //  QueueExpiration Implementation
 // ===============================
 
+// SetExpiration define o tempo de expiração da fila e reinicia o contador.
 func (q *QueueManager) SetExpiration(d time.Duration) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -38,6 +40,7 @@ func (q *QueueManager) SetExpiration(d time.Duration) {
 	q.lastResetTime = time.Now()
 }
 
+// ResetExpiration reinicia o contador de expiração sem alterar o valor configurado.
 func (q *QueueManager) ResetExpiration() {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -45,6 +48,7 @@ func (q *QueueManager) ResetExpiration() {
 	q.lastResetTime = time.Now()
 }
 
+// GetExpiration retorna a duração configurada para expiração da fila.
 func (q *QueueManager) GetExpiration() time.Duration {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -52,6 +56,7 @@ func (q *QueueManager) GetExpiration() time.Duration {
 	return q.expiration
 }
 
+// GetTimeToExpire informa quanto tempo falta para a fila expirar.
 func (q *QueueManager) GetTimeToExpire() time.Duration {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -64,6 +69,7 @@ func (q *QueueManager) GetTimeToExpire() time.Duration {
 	return q.expiration - elapsed
 }
 
+// HasExpired indica se a fila já atingiu o tempo de expiração configurado.
 func (q *QueueManager) HasExpired() bool {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -79,6 +85,7 @@ func (q *QueueManager) HasExpired() bool {
 //  QueueOperations
 // ============================
 
+// AddWork insere um novo trabalho na fila, preenchendo campos padrão quando necessário.
 func (q *QueueManager) AddWork(w *Work) error {
 	if w == nil {
 		return errors.New("work cannot be nil")
@@ -89,6 +96,10 @@ func (q *QueueManager) AddWork(w *Work) error {
 
 	if q.closed {
 		return errors.New("queue is closed")
+	}
+
+	if q.expiration > 0 {
+		q.lastResetTime = time.Now()
 	}
 
 	if w.State == "" {
@@ -111,10 +122,12 @@ func (q *QueueManager) AddWork(w *Work) error {
 	return nil
 }
 
+// GetKey retorna a chave associada à fila.
 func (q *QueueManager) GetKey() string {
 	return q.Key
 }
 
+// NextWork consome o próximo trabalho do canal, respeitando o contexto informado.
 func (q *QueueManager) NextWork(ctx context.Context) (*Work, bool) {
 	select {
 	case w, ok := <-q.WorkQueue:
@@ -127,6 +140,7 @@ func (q *QueueManager) NextWork(ctx context.Context) (*Work, bool) {
 	}
 }
 
+// Close encerra a fila e fecha o canal principal.
 func (q *QueueManager) Close() {
 	q.mu.Lock()
 	if q.closed {
@@ -142,28 +156,34 @@ func (q *QueueManager) Close() {
 //  QueueInspector
 // ============================
 
+// CountAllWorks retorna a quantidade total de trabalhos já registrados.
 func (q *QueueManager) CountAllWorks() int {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	return len(q.WorkBuffer)
 }
 
+// CountPendingWorks retorna quantos trabalhos estão pendentes.
 func (q *QueueManager) CountPendingWorks() int {
 	return len(q.ListWorksByState(WorkPending))
 }
 
+// CountRunningWorks retorna quantos trabalhos estão em execução.
 func (q *QueueManager) CountRunningWorks() int {
 	return len(q.ListWorksByState(WorkRunning))
 }
 
+// CountDoneWorks retorna quantos trabalhos foram finalizados.
 func (q *QueueManager) CountDoneWorks() int {
 	return len(q.ListWorksByState(WorkDone))
 }
 
+// CountFailedWorks retorna quantos trabalhos falharam.
 func (q *QueueManager) CountFailedWorks() int {
 	return len(q.ListWorksByState(WorkFailed))
 }
 
+// ListWorksByState lista os trabalhos que possuem o estado informado.
 func (q *QueueManager) ListWorksByState(state WorkState) []*Work {
 	q.mu.Lock()
 	defer q.mu.Unlock()

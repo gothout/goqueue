@@ -37,18 +37,22 @@ type Work struct {
 // Work Reader helpers
 // =========================
 
+// GetState retorna o estado atual do trabalho.
 func (w *Work) GetState() WorkState {
 	return w.State
 }
 
+// GetInboundPayload retorna a mensagem recebida pelo trabalho.
 func (w *Work) GetInboundPayload() string {
 	return w.InboundPayload
 }
 
+// GetOutboundPayload retorna a resposta enviada pelo trabalho.
 func (w *Work) GetOutboundPayload() string {
 	return w.OutboundPayload
 }
 
+// GetErrorMessage retorna a mensagem de erro do trabalho, quando houver.
 func (w *Work) GetErrorMessage() string {
 	return w.ErrorMsg
 }
@@ -61,10 +65,12 @@ func (w *Work) SetState(state WorkState) {
 	w.State = state
 }
 
+// SetOutboundPayload registra a resposta produzida pelo trabalho.
 func (w *Work) SetOutboundPayload(payload string) {
 	w.OutboundPayload = payload
 }
 
+// SetErrorMessage salva a mensagem de erro vinculada ao trabalho.
 func (w *Work) SetErrorMessage(err string) {
 	w.ErrorMsg = err
 }
@@ -73,23 +79,26 @@ func (w *Work) SetErrorMessage(err string) {
 // Work Controller helpers
 // =========================
 
+// Start marca o trabalho como em execução e registra o horário de início.
 func (w *Work) Start() {
 	w.State = WorkRunning
 	w.StartedAt = time.Now()
 }
 
+// Finish marca o trabalho como concluído e salva o horário de finalização.
 func (w *Work) Finish() {
 	w.State = WorkDone
 	w.FinishedAt = time.Now()
 }
 
+// Fail marca o trabalho como falho, armazenando a razão informada.
 func (w *Work) Fail(reason string) {
 	w.State = WorkFailed
 	w.ErrorMsg = reason
 	w.FinishedAt = time.Now()
 }
 
-// NewWork é um helper para criar um work pronto para enfileirar
+// NewWork é um helper para criar um work pronto para enfileirar.
 func NewWork(key, payload string) *Work {
 	return &Work{
 		Key:            key,

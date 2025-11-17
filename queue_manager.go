@@ -1,6 +1,7 @@
 package goqueue
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -12,7 +13,17 @@ type QueueManager struct {
 	WorkBuffer    []*Work
 	expiration    time.Duration
 	lastResetTime time.Time
+	closed        bool
 	mu            sync.Mutex
+}
+
+func NewQueueManager(key string, bufferSize int) *QueueManager {
+	return &QueueManager{
+		Key:           key,
+		WorkQueue:     make(chan *Work, bufferSize),
+		WorkBuffer:    make([]*Work, 0),
+		lastResetTime: time.Now(),
+	}
 }
 
 // ===============================
@@ -53,6 +64,17 @@ func (q *QueueManager) GetTimeToExpire() time.Duration {
 	return q.expiration - elapsed
 }
 
+func (q *QueueManager) HasExpired() bool {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+
+	if q.expiration == 0 {
+		return false
+	}
+
+	return time.Since(q.lastResetTime) >= q.expiration
+}
+
 // ============================
 //  QueueOperations
 // ============================
@@ -63,15 +85,57 @@ func (q *QueueManager) AddWork(w *Work) error {
 	}
 
 	q.mu.Lock()
-	q.WorkBuffer = append(q.WorkBuffer, w)
-	q.mu.Unlock()
+	defer q.mu.Unlock()
 
-	q.WorkQueue <- w
+	if q.closed {
+		return errors.New("queue is closed")
+	}
+
+	if w.State == "" {
+		w.State = WorkPending
+	}
+	if w.CreatedAt.IsZero() {
+		w.CreatedAt = time.Now()
+	}
+
+	q.WorkBuffer = append(q.WorkBuffer, w)
+
+	select {
+	case q.WorkQueue <- w:
+	default:
+		go func(w *Work) {
+			q.WorkQueue <- w
+		}(w)
+	}
+
 	return nil
 }
 
 func (q *QueueManager) GetKey() string {
 	return q.Key
+}
+
+func (q *QueueManager) NextWork(ctx context.Context) (*Work, bool) {
+	select {
+	case w, ok := <-q.WorkQueue:
+		if !ok {
+			return nil, false
+		}
+		return w, true
+	case <-ctx.Done():
+		return nil, false
+	}
+}
+
+func (q *QueueManager) Close() {
+	q.mu.Lock()
+	if q.closed {
+		q.mu.Unlock()
+		return
+	}
+	q.closed = true
+	close(q.WorkQueue)
+	q.mu.Unlock()
 }
 
 // ============================

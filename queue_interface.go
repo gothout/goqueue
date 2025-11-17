@@ -7,6 +7,7 @@ type QueueExpiration interface {
 	ResetExpiration()               // reseta contador de expiração
 	GetExpiration() time.Duration   // retorna tempo configurado
 	GetTimeToExpire() time.Duration // quanto falta para expirar
+	HasExpired() bool               // indica se já expirou
 }
 
 type QueueInspector interface {

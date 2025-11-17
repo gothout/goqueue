@@ -10,7 +10,7 @@ Pequena biblioteca em Go para criação de filas baseadas em *channels*, com obs
 
 ## Instalação
 ```bash
-go get goqueue
+go get github.com/gothout/goqueue
 ```
 
 ## Uso rápido
@@ -18,11 +18,11 @@ go get goqueue
 package main
 
 import (
-        "context"
-        "fmt"
-        "time"
+"context"
+"fmt"
+"time"
 
-        "goqueue"
+"github.com/gothout/goqueue"
 )
 
 func main() {

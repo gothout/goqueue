@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"sync"
+	"time"
 )
 
 type Engine struct {
@@ -15,10 +16,14 @@ type Engine struct {
 
 // NewEngine cria uma engine central que mantém todas as filas registradas.
 func NewEngine() *Engine {
-	return &Engine{
+	e := &Engine{
 		queues:     make(map[string]*QueueManager),
 		queueEvent: make(chan *QueueManager, 16),
 	}
+
+	go e.cleanupExpiredQueues()
+
+	return e
 }
 
 // GetOrCreateQueue retorna a fila existente ou cria uma nova fila com buffer padrão.
@@ -63,6 +68,22 @@ func (e *Engine) DeleteQueue(key string) error {
 	q.Close()
 	delete(e.queues, key)
 	return nil
+}
+
+func (e *Engine) cleanupExpiredQueues() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		e.mu.Lock()
+		for key, q := range e.queues {
+			if q.HasExpired() {
+				q.Close()
+				delete(e.queues, key)
+			}
+		}
+		e.mu.Unlock()
+	}
 }
 
 // ListQueues retorna todas as chaves registradas.

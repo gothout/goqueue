@@ -98,6 +98,10 @@ func (q *QueueManager) AddWork(w *Work) error {
 		return errors.New("queue is closed")
 	}
 
+	if q.expiration > 0 {
+		q.lastResetTime = time.Now()
+	}
+
 	if w.State == "" {
 		w.State = WorkPending
 	}

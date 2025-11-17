@@ -1,3 +1,3 @@
-module goqueue
+module github.com/gothout/goqueue
 
 go 1.21

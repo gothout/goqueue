@@ -1,0 +1,52 @@
+# ================================================
+# Go binaries e artefatos de build
+# ================================================
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.*
+*.coverprofile
+profile.cov
+
+# ================================================
+# Go workspace
+# ================================================
+go.work
+go.work.sum
+
+# ================================================
+# Configurações e variáveis de ambiente
+# ================================================
+
+# Arquivo real de configuração (privado, não versionar)
+config.json
+
+# Modelo de configuração (pode versionar)
+!example.config.json
+
+# Arquivos .env (locais)
+.env
+
+# ================================================
+# Certificados e logs
+# ================================================
+certificates/*
+!certificates/readme.md
+
+logs/*
+
+# ================================================
+# Editor / IDE
+# ================================================
+.idea/
+.vscode/
+
+# ================================================
+# Arquivos de backup temporários
+# ================================================
+*.bak
+**/*.bak

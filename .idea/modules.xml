@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/../goqueue/.idea/goqueue.iml" filepath="$PROJECT_DIR$/../goqueue/.idea/goqueue.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/go-queue.iml" filepath="$PROJECT_DIR$/.idea/go-queue.iml" />
     </modules>
   </component>
 </project>
